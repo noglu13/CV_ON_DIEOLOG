@@ -5,7 +5,7 @@ import cv2
 import imutils
 
 # Ждем три секунды, успеваем переключиться на окно:
-print('waiting for 2 seconds...')
+print('waiting for 3 seconds...')
 time.sleep(3)
 
 #ВНИМАНИЕ! PyAutoGUI НЕ ЧИТАЕТ В JPG!
@@ -44,7 +44,30 @@ window = (left, top, left+window_resolution[0], top+window_resolution[1])
 cv2.namedWindow('result')
 
 
+ranges = {
+    'min_h1': {'current': 33, 'max': 180},
+    'max_h1': {'current': 66, 'max': 180},
+    'min_sv': {'current': 26, 'max': 255},
+    'max_sv': {'current': 198, 'max': 255},
+    'counters': {'current':0, 'max': 5000}
+}
 
+
+def trackbar_handler(name):
+    def handler(x):
+        global ranges
+        ranges[name]['current'] = x
+
+    return handler
+
+
+for name in ranges:
+    cv2.createTrackbar(name,
+                       'result',
+                       ranges[name]['current'],
+                       ranges[name]['max'],
+                       trackbar_handler(name)
+                       )
 
 
 
@@ -55,24 +78,26 @@ while True:
 
     pix = pyautogui.screenshot(region=(left, top, window_resolution[0], window_resolution[1]))
     numpix = cv2.cvtColor(np.array(pix), cv2.COLOR_RGB2BGR)
-    frame    = numpix[window_resolution[1] //2:, :, :]
+    frame = numpix[window_resolution[1] //2:, :, :]
 
-    #frame = cv2.GaussianBlur(frame, ksize=(15, 15), sigmaX=0, sigmaY=0)
-    filter_ = np.array([[-1, -1, -1], [-1, 10, -1], [-1, -1, -1]])
-    frame = cv2.filter2D(frame, ddepth=0, kernel=filter_)
+    frame = cv2.GaussianBlur(frame, ksize=(11, 11), sigmaX=0, sigmaY=0)
+    #filter_ = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+    #frame = cv2.filter2D(frame, ddepth=0, kernel=filter_)
     frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    min_ = (50, 0, 0)
-    max_ = (90, 255, 255)
+    min_ = (ranges['min_h1']['current'], ranges['min_sv']['current'], ranges['min_sv']['current'])
+    max_ = (ranges['max_h1']['current'], ranges['max_sv']['current'], ranges['max_sv']['current'])
 
-    min_1 = (30, 0, 0)
-    max_1 = (40, 75, 75)
+    #41 70 31 255
 
-    min_2 = (0, 0, 0)
-    max_2 = (10, 75, 75)
+    min_1 = (30, ranges['min_sv']['current'], ranges['min_sv']['current'])
+    max_1 = (40, ranges['min_sv']['current'], ranges['min_sv']['current'])
 
-    min_3 = (170, 0, 0)
-    max_3 = (180, 75, 75)
+    min_2 = (0, ranges['min_sv']['current'], ranges['min_sv']['current'])
+    max_2 = (10, ranges['min_sv']['current'], ranges['min_sv']['current'])
+
+    min_3 = (170, ranges['min_sv']['current'], ranges['min_sv']['current'])
+    max_3 = (180, ranges['min_sv']['current'], ranges['min_sv']['current'])
 
     maskG = cv2.inRange(frame_hsv, min_, max_)
     maskY = cv2.inRange(frame_hsv, min_1, max_1)
@@ -90,21 +115,30 @@ while True:
 
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-        cv2.drawContours(result, contours, -1, (255, 0, 0), 1)
+        if len(contours) <= ranges['counters']['current']:
+            cnt = contours[-1]
+        #elif len(contours) <= 400:
+            #cnt = contours[1]
+        else:
+            cnt = contours[0]
+        cv2.drawContours(result, contours, 0, (255, 0, 0), 1)
 
-        (x, y, w, h) = cv2.boundingRect(contours[0])
+        (x, y, w, h) = cv2.boundingRect(cnt)
 
         cv2.rectangle(result, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
-        (x1, y1), radius = cv2.minEnclosingCircle(contours[0])
-        center = (window_resolution[0]//2, window_resolution[0])
+        (x1, y1), radius = cv2.minEnclosingCircle(cnt)
+        center = (int(x1), int(y1))
         radius = int(radius)
-        startP = (window_resolution[0]//2, window_resolution[0])
+        X = result.shape[0]
+        Y = result.shape[1]
+        startP = (Y//2, X)
 
         cv2.circle(result, center, radius, (0, 255, 0), 1)
         cv2.line(result, startP, center, (0, 255, 0), 1)
 
-
+        print(x1 - Y//2)
+        #print(len(contours))
 
     cv2.imshow('result', result)
 
@@ -113,3 +147,4 @@ while True:
         break
 
 cv2.destroyAllWindows()
+
