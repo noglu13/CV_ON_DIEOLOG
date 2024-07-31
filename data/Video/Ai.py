@@ -2,7 +2,11 @@ import pyautogui
 import time
 import numpy as np
 import cv2
-import imutils
+import ctypes
+from keys import *
+from threading import Thread
+from time import sleep
+from queue import Queue
 
 # Ждем три секунды, успеваем переключиться на окно:
 print('waiting for 3 seconds...')
@@ -69,18 +73,79 @@ for name in ranges:
                        trackbar_handler(name)
                        )
 
+POVOROTW = Queue()
+POVOROTA = Queue()
+POVOROTS = Queue()
+POVOROTD = Queue()
+POSITA = []
 
 
 
+def Fpos():
+    a = len(POSITA)
+    if a == 5:
+        pos1 = POSITA[0]
+
+    Fpos = (pos1+pos2+pos3+pos4+pos5)//5
+    return(Fpos)
 
 
+def P_W():
+
+    while (w := POVOROTW.get()) is not None:
+        if w == 1:
+            key_press(SC_W,interval=0.09)
+        else:
+            key_press(SC_W)
+            sleep(1)
+
+
+def P_A():
+
+    while (a := POVOROTA.get()) is not None:
+        if a == 1:
+            key_press(SC_A,interval=0.01)
+            key_press(SC_S, interval=0.05)
+        else:
+            key_press(SC_A,interval=0.05)
+
+def P_S():
+
+    while (s := POVOROTS.get()) is not None:
+        key_down(SC_S)
+
+
+def P_D():
+
+    while (d := POVOROTD.get()) is not None:
+        if d == 1:
+            key_press(SC_D,interval=0.01)
+            key_press(SC_S, interval=0.05)
+        else:
+            key_press(SC_D, interval=0.05)
+
+
+W = Thread(target=P_W,)
+A = Thread(target=P_A,)
+S = Thread(target=P_S,)
+D = Thread(target=P_D,)
+
+W.start()
+A.start()
+S.start()
+D.start()
 while True:
+
+    statusP = True
 
     pix = pyautogui.screenshot(region=(left, top, window_resolution[0], window_resolution[1]))
     numpix = cv2.cvtColor(np.array(pix), cv2.COLOR_RGB2BGR)
-    frame = numpix[window_resolution[1] //2:, :, :]
 
-    frame = cv2.GaussianBlur(frame, ksize=(11, 11), sigmaX=0, sigmaY=0)
+    # frame = numpix[window_resolution[1]//2 + window_resolution[1]//10:, window_resolution[1] // 4:window_resolution[1] // -4, :]
+
+    frame = numpix[window_resolution[1] // 2:,: ,:]
+
+    frame = cv2.GaussianBlur(frame, ksize=(9, 9), sigmaX=0, sigmaY=0)
     #filter_ = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
     #frame = cv2.filter2D(frame, ddepth=0, kernel=filter_)
     frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -88,7 +153,7 @@ while True:
     min_ = (ranges['min_h1']['current'], ranges['min_sv']['current'], ranges['min_sv']['current'])
     max_ = (ranges['max_h1']['current'], ranges['max_sv']['current'], ranges['max_sv']['current'])
 
-    #41 70 31 255
+    #41 70 31 255a
 
     min_1 = (30, ranges['min_sv']['current'], ranges['min_sv']['current'])
     max_1 = (40, ranges['min_sv']['current'], ranges['min_sv']['current'])
@@ -137,14 +202,48 @@ while True:
         cv2.circle(result, center, radius, (0, 255, 0), 1)
         cv2.line(result, startP, center, (0, 255, 0), 1)
 
-        print(x1 - Y//2)
-        #print(len(contours))
 
-    cv2.imshow('result', result)
+        position = x1 - Y//2
+        POSITA.append(position)
+        sleep(0.001)
+        POSITA.append(position)
+        sleep(0.001)
+        POSITA.append(position)
+        sleep(0.001)
+        POSITA.append(position)
+        sleep(0.001)
+        POSITA.append(position)
+        Fpose = Fpos()
 
+
+
+
+
+        #print(position, x1, Y//2)
+        if Fpose >= 300:
+            POVOROTD.put(1)
+        elif Fpose >= 50:
+            POVOROTD.put(2)
+        elif Fpose <= -300:
+            POVOROTA.put(1)
+        elif Fpose <= -50:
+            POVOROTA.put(2)
+        else:
+            POVOROTW.put(1)
+
+        cv2.imshow('result', result)
 
     if cv2.waitKey(1) == 27:
         break
 
 cv2.destroyAllWindows()
 
+POVOROTD.put(None)
+POVOROTW.put(None)
+POVOROTA.put(None)
+POVOROTS.put(None)
+
+W.join()
+A.join()
+S.join()
+D.join()

@@ -1,14 +1,14 @@
 import ctypes
 import time
 from threading import Thread
-from time import sleep
+import cv2
 
 SC_W = (0x11, False)
 SC_A = (0x1E, False)
 SC_S = (0x1F, False)
 SC_D = (0x20, False)
 
-__all__ = ["key_down", "key_up", "SC_DOWN", "SC_UP", "SC_LEFT", "SC_RIGHT"]
+__all__ = ["key_down", "key_up","key_press", "SC_S", "SC_W", "SC_A", "SC_D"]
 
 SC_LEFT = (0x4B, True)
 SC_RIGHT = (0x4D, True)
@@ -86,12 +86,27 @@ def key_press(hexKeyCode, interval=0.02):
     key_up(hexKeyCode)
 
 
-if __name__ == '__main__':
-    time.sleep(1)
-    key_press(SC_W)
-    time.sleep(1)
-    key_press(SC_A)
-    time.sleep(1)
-    key_press(SC_S)
-    time.sleep(1)
-    key_press(SC_D)
+#if __name__ == '__main__':
+    # time.sleep(1)
+    # key_press(SC_W)
+    # time.sleep(1)
+    # key_press(SC_A)
+    # time.sleep(1)
+    # key_press(SC_S)
+    # time.sleep(1)
+    # key_press(SC_D)
+
+# def t1(f_codition):
+#     while f_codition():
+#         key_press(SC_W)
+#
+# ttt = True
+# def t3():
+#     global ttt
+#     return ttt
+#
+#
+# t2 = Thread(target=t1, args=(t3, ))
+# t2.start()
+# time.sleep(5)
+# ttt = False
