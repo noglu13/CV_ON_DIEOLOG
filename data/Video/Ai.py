@@ -86,6 +86,7 @@ def Fpos():
     if a == 5:
         pos1 = POSITA[0]
 
+
     Fpos = (pos1+pos2+pos3+pos4+pos5)//5
     return(Fpos)
 
