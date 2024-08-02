@@ -7,6 +7,7 @@ from keys import *
 from threading import Thread
 from time import sleep
 from queue import Queue
+import math
 
 # Ждем три секунды, успеваем переключиться на окно:
 print('waiting for 3 seconds...')
@@ -76,7 +77,7 @@ POVOROTW = Queue(maxsize=1)
 POVOROTA = Queue(maxsize=1)
 POVOROTS = Queue(maxsize=1)
 POVOROTD = Queue(maxsize=1)
-POSITA = Queue(maxsize=4)
+POSITA = Queue(maxsize=5)
 
 
 def Fpos():
@@ -89,27 +90,50 @@ def Fpos():
 def P_W():
 
     while (w := POVOROTW.get()) is not None:
-        key_press(SC_W, interval=0.5 )
-
-
+        if w == 1:
+            key_press(SC_W, interval=0.05)
+        if w == 2:
+            key_press(SC_W, interval=0.01)
+        if w == 3:
+            key_press(SC_W, interval=0.005)
+alpha = 0.25
 def P_A():
     cnt = 1
     while (a := POVOROTA.get()) is not None:
-        key_press(SC_A, interval=.2)
-        print(f"a: {cnt}")
-        cnt += 1
+        if a == 1:
+            key_press(SC_A, interval=alpha*.005)
+        elif a == 2:
+            key_press(SC_A, interval=alpha*.01)
+        elif a == 3:
+            key_press(SC_A, interval=alpha*.07)
+        elif a == 4:
+            key_press(SC_A, interval=alpha*.1)
+        elif a == 5:
+            key_press(SC_A, interval=alpha*.2)
+
 
 def P_S():
     while (s := POVOROTS.get()) is not None:
-        key_press(SC_S, interval=0.1)
-
+        if s == 1:
+            key_press(SC_S, interval=0.01)
+        elif s == 2:
+            key_press(SC_S, interval=0.1)
 
 def P_D():
     cnt = 1
     while (d := POVOROTD.get()) is not None:
-        key_press(SC_D, interval=.2)
-        print(f"d: {cnt}")
-        cnt += 1
+        if d == 1:
+            key_press(SC_D, interval=alpha*.005)
+        elif d == 2:
+            key_press(SC_D, interval=alpha*.01)
+        elif d == 3:
+            key_press(SC_D, interval=alpha*.07)
+        elif d == 4:
+            key_press(SC_D, interval=alpha*.1)
+        elif d == 5:
+            key_press(SC_D, interval=alpha*.2)
+        # print(f"d: {cnt}")
+        # cnt += 1
 
 
 W = Thread(target=P_W,)
@@ -189,36 +213,101 @@ while True:
         cv2.circle(result, center, radius, (0, 255, 0), 1)
         cv2.line(result, startP, center, (0, 255, 0), 1)
 
-
         position = x1 - Y//2
         if POSITA.full():
             POSITA.get()
         POSITA.put(position)
 
+
+        # ((Y // 2 - x1) // 1) = Катет Горизонтально
+        CUDA = 0
+        hor = (Y // 2 - x1) // 1
+        norm = X - y1
+        if hor <= -1 :
+            hor = hor*-1
+            CUDA = 1
+        tg = np.degrees(np.arctan(hor / norm))
+        print(tg)
+
         avg_pos = Fpos()
 
+        # if avg_pos >= 180:
+        #     if not POVOROTD.full():
+        #         POVOROTD.put(5)
+        #         POVOROTS.put(2)
+        # elif avg_pos >= 150:
+        #     if not POVOROTD.full():
+        #         POVOROTD.put(4)
+        #         POVOROTS.put(1)
+        # elif avg_pos >= 130:
+        #     if not POVOROTD.full():
+        #         POVOROTD.put(3)
+        # elif avg_pos >= 70:
+        #     if not POVOROTD.full():
+        #         POVOROTD.put(2)
+        #         POVOROTW.put(3)
+        # elif avg_pos >= 30:
+        #     if not POVOROTD.full():
+        #         POVOROTD.put(1)
+        #         POVOROTW.put(2)
+        # elif avg_pos <= -180:
+        #     if not POVOROTA.full():
+        #         POVOROTA.put(5)
+        #         POVOROTS.put(1)
+        # elif avg_pos <= -150:
+        #     if not POVOROTA.full():
+        #         POVOROTA.put(4)
+        #         POVOROTS.put(2)
+        # elif avg_pos <= -130:
+        #     if not POVOROTA.full():
+        #         POVOROTA.put(3)
+        # elif avg_pos <= -70:
+        #     if not POVOROTA.full():
+        #         POVOROTA.put(2)
+        #         POVOROTW.put(3)
+        # elif avg_pos <= -30:
+        #     if not POVOROTA.full():
+        #         POVOROTA.put(1)
+        #         POVOROTW.put(2)
+        # else:
+        #     POVOROTW.put(1)
 
-
-
-
-        print(avg_pos)
-        if avg_pos >= 250:
-            if not POVOROTD.full():
-                POVOROTD.put(10)
+        if CUDA == 1:
+            #Направо
+            if tg <= 45:
+                POVOROTD.put(5)
+                POVOROTS.put(2)
+            elif tg <= 35:
+                POVOROTD.put(4)
                 POVOROTS.put(1)
-        elif avg_pos >= 100:
-            if not POVOROTD.full():
-                POVOROTD.put(9)
-        elif avg_pos <= -250:
-            if not POVOROTA.full():
-                POVOROTA.put(10)
-        elif avg_pos <= -100:
-            if not POVOROTA.full():
-                POVOROTA.put(9)
-                POVOROTS.put(1)
+            elif tg <= 25:
+                POVOROTD.put(3)
+            elif tg <= 15:
+                POVOROTD.put(2)
+                POVOROTW.put(2)
+            elif tg <= 5:
+                POVOROTD.put(1)
+                POVOROTW.put(3)
+            else:
+                POVOROTW.put(1)
         else:
-            POVOROTW.put(1)
-
+            #Налево
+            if tg <= 45:
+                POVOROTA.put(5)
+                POVOROTS.put(2)
+            elif tg <= 35:
+                POVOROTA.put(4)
+                POVOROTS.put(1)
+            elif tg <= 25:
+                POVOROTA.put(3)
+            elif tg <= 15:
+                POVOROTA.put(2)
+                POVOROTW.put(2)
+            elif tg <= 5:
+                POVOROTA.put(1)
+                POVOROTW.put(3)
+            else:
+                POVOROTW.put(1)
 
     cv2.imshow('result', result)
 
