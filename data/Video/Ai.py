@@ -77,7 +77,7 @@ POVOROTW = Queue(maxsize=1)
 POVOROTA = Queue(maxsize=1)
 POVOROTS = Queue(maxsize=1)
 POVOROTD = Queue(maxsize=1)
-POSITA = Queue(maxsize=5)
+POSITA = Queue(maxsize=2)
 
 
 def Fpos():
@@ -90,50 +90,34 @@ def Fpos():
 def P_W():
 
     while (w := POVOROTW.get()) is not None:
-        if w == 1:
-            key_press(SC_W, interval=0.05)
-        if w == 2:
-            key_press(SC_W, interval=0.01)
-        if w == 3:
-            key_press(SC_W, interval=0.005)
-alpha = 0.25
+        key_press(SC_W, interval=w)
+
+
 def P_A():
-    cnt = 1
     while (a := POVOROTA.get()) is not None:
-        if a == 1:
-            key_press(SC_A, interval=alpha*.005)
-        elif a == 2:
-            key_press(SC_A, interval=alpha*.01)
-        elif a == 3:
-            key_press(SC_A, interval=alpha*.07)
-        elif a == 4:
-            key_press(SC_A, interval=alpha*.1)
-        elif a == 5:
-            key_press(SC_A, interval=alpha*.2)
+        key_press(SC_A, interval=a)
 
 
 def P_S():
     while (s := POVOROTS.get()) is not None:
-        if s == 1:
-            key_press(SC_S, interval=0.01)
-        elif s == 2:
-            key_press(SC_S, interval=0.1)
+        key_press(SC_S, interval=s)
+
 
 def P_D():
-    cnt = 1
     while (d := POVOROTD.get()) is not None:
-        if d == 1:
-            key_press(SC_D, interval=alpha*.005)
-        elif d == 2:
-            key_press(SC_D, interval=alpha*.01)
-        elif d == 3:
-            key_press(SC_D, interval=alpha*.07)
-        elif d == 4:
-            key_press(SC_D, interval=alpha*.1)
-        elif d == 5:
-            key_press(SC_D, interval=alpha*.2)
-        # print(f"d: {cnt}")
-        # cnt += 1
+        key_press(SC_D, interval=d)
+
+
+def PID():
+    # Пропорцианально
+    P1 = POSITA.get()
+    P2 = POSITA.get()
+    kf = P2 + P1
+    #Интегрально
+    Ki = -0.05 #Значениет регулируемое
+    I = (P1*Ki) + (P2*Ki)
+    #Диференциальное
+    print()
 
 
 W = Thread(target=P_W,)
@@ -213,10 +197,7 @@ while True:
         cv2.circle(result, center, radius, (0, 255, 0), 1)
         cv2.line(result, startP, center, (0, 255, 0), 1)
 
-        position = x1 - Y//2
-        if POSITA.full():
-            POSITA.get()
-        POSITA.put(position)
+
 
 
         # ((Y // 2 - x1) // 1) = Катет Горизонтально
@@ -227,87 +208,80 @@ while True:
             hor = hor*-1
             CUDA = 1
         tg = np.degrees(np.arctan(hor / norm))
+        up = X//2 - y1
+
+        if POSITA.full():
+            POSITA.get()
+        POSITA.put(tg)
+        tg = Fpos()
         print(tg)
 
-        avg_pos = Fpos()
 
-        # if avg_pos >= 180:
-        #     if not POVOROTD.full():
-        #         POVOROTD.put(5)
-        #         POVOROTS.put(2)
-        # elif avg_pos >= 150:
-        #     if not POVOROTD.full():
-        #         POVOROTD.put(4)
-        #         POVOROTS.put(1)
-        # elif avg_pos >= 130:
-        #     if not POVOROTD.full():
-        #         POVOROTD.put(3)
-        # elif avg_pos >= 70:
-        #     if not POVOROTD.full():
-        #         POVOROTD.put(2)
-        #         POVOROTW.put(3)
-        # elif avg_pos >= 30:
-        #     if not POVOROTD.full():
-        #         POVOROTD.put(1)
-        #         POVOROTW.put(2)
-        # elif avg_pos <= -180:
-        #     if not POVOROTA.full():
-        #         POVOROTA.put(5)
-        #         POVOROTS.put(1)
-        # elif avg_pos <= -150:
-        #     if not POVOROTA.full():
-        #         POVOROTA.put(4)
-        #         POVOROTS.put(2)
-        # elif avg_pos <= -130:
-        #     if not POVOROTA.full():
-        #         POVOROTA.put(3)
-        # elif avg_pos <= -70:
-        #     if not POVOROTA.full():
-        #         POVOROTA.put(2)
-        #         POVOROTW.put(3)
-        # elif avg_pos <= -30:
-        #     if not POVOROTA.full():
-        #         POVOROTA.put(1)
-        #         POVOROTW.put(2)
+        # if CUDA == 1:
+        #     if up >= 0:
+        #         #Направо
+        #         if tg >= 55:
+        #             POVOROTD.put(0.04)
+        #             print("6D")
+        #         elif tg >= 45:
+        #             POVOROTD.put(0.02)
+        #             POVOROTW.put(0.01)
+        #             print("5D")
+        #         elif tg >= 35:
+        #             POVOROTD.put(0.03)
+        #             POVOROTW.put(0.02)
+        #             print("4D")
+        #         elif tg >= 25:
+        #             POVOROTD.put(0.03)
+        #             POVOROTW.put(0.04)
+        #             print("3D")
+        #         elif tg >= 15:
+        #             POVOROTD.put(0.02)
+        #             POVOROTW.put(0.08)
+        #             print("2D")
+        #         elif tg >= 5:
+        #             POVOROTD.put(0.01)
+        #             POVOROTW.put(0.16)
+        #             print("1D")
+        #         else:
+        #             POVOROTW.put(0.2)
+        #     if hor >= 150 and up <= -10 and tg >= 60:
+        #         POVOROTD.put(0.1)
+        #         print("7D")
+        #
         # else:
-        #     POVOROTW.put(1)
+        #     if up >= 0:
+        #         #Налево
+        #         if tg >= 55:
+        #             POVOROTA.put(0.04)
+        #             print("6A")
+        #         elif tg >= 45:
+        #             POVOROTA.put(0.035)
+        #             POVOROTW.put(0.01)
+        #             print("5A")
+        #         elif tg >= 35:
+        #             POVOROTA.put(0.03)
+        #             POVOROTW.put(0.02)
+        #             print("4A")
+        #         elif tg >= 25:
+        #             POVOROTA.put(0.03)
+        #             POVOROTW.put(0.04)
+        #             print("3A")
+        #         elif tg > 15:
+        #             POVOROTA.put(0.02)
+        #             POVOROTW.put(0.08)
+        #             print("2A")
+        #         elif tg >= 5:
+        #             POVOROTA.put(0.01)
+        #             POVOROTW.put(0.16)
+        #             print("1A")
+        #         else:
+        #             POVOROTW.put(0.2)
+        #     if hor >= 150 and up <= -10 and tg >= 60:
+        #         POVOROTA.put(0.1)
+        #         print("7A")
 
-        if CUDA == 1:
-            #Направо
-            if tg <= 45:
-                POVOROTD.put(5)
-                POVOROTS.put(2)
-            elif tg <= 35:
-                POVOROTD.put(4)
-                POVOROTS.put(1)
-            elif tg <= 25:
-                POVOROTD.put(3)
-            elif tg <= 15:
-                POVOROTD.put(2)
-                POVOROTW.put(2)
-            elif tg <= 5:
-                POVOROTD.put(1)
-                POVOROTW.put(3)
-            else:
-                POVOROTW.put(1)
-        else:
-            #Налево
-            if tg <= 45:
-                POVOROTA.put(5)
-                POVOROTS.put(2)
-            elif tg <= 35:
-                POVOROTA.put(4)
-                POVOROTS.put(1)
-            elif tg <= 25:
-                POVOROTA.put(3)
-            elif tg <= 15:
-                POVOROTA.put(2)
-                POVOROTW.put(2)
-            elif tg <= 5:
-                POVOROTA.put(1)
-                POVOROTW.put(3)
-            else:
-                POVOROTW.put(1)
+
 
     cv2.imshow('result', result)
 
@@ -322,6 +296,10 @@ POVOROTA.put(None)
 POVOROTS.put(None)
 
 W.join()
+A.join()
+S.join()
+D.join()
+
 A.join()
 S.join()
 D.join()
